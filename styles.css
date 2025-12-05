@@ -1039,6 +1039,19 @@ header h1 {
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
+@media (max-width: 768px) {
+    .set-edit-form {
+        gap: 6px;
+    }
+
+    .edit-input {
+        width: 60px;
+        padding: 6px 8px;
+        font-size: 0.85rem;
+    }
+}
+
+
 /* Calendar View */
 .calendar-header {
     display: flex;

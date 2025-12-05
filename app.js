@@ -479,7 +479,6 @@ function viewWorkout(workoutId) {
                                 ${set.rest ? `<span class="rest-time">⏱️ ${set.rest}s</span>` : ''}
                             </div>
                             ${set.rest && !set.completed ? `<button class="btn-timer" onclick="startTimer(${set.rest}, '${workout.id}', ${exIndex}, ${index})">⏱️</button>` : ''}
-                            <button class="btn-edit-set" onclick="editSet('${workout.id}', ${exIndex}, ${index})" title="Modifica">✏️</button>
                         </div>
                     `).join('')}
                 </div>
@@ -534,7 +533,6 @@ function editSet(workoutId, exIndex, setIndex) {
             <input type="number" class="edit-input" value="${set.rest || 90}" min="0" step="5" placeholder="Riposo">
         </div>
         <button class="btn-save-set" onclick="saveSetEdit('${workoutId}', ${exIndex}, ${setIndex})">✓</button>
-        <button class="btn-cancel-set" onclick="cancelSetEdit('${workoutId}', ${exIndex}, ${setIndex}, \`${originalContent.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)">✕</button>
     `;
     
     // Focus first input
