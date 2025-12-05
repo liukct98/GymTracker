@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - My Gym Tracker</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --dark: #1f2937;
+            --gray: #6b7280;
+            --gray-light: #d1d5db;
+            --bg: #f9fafb;
+            --white: #ffffff;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --shadow-lg: rgba(0, 0, 0, 0.2);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .card {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            min-height: 500px;
+            background: var(--white);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px var(--shadow-lg);
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .panel-left, .panel-right {
+            padding: 60px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .slider {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            transition: transform 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+        }
+
+        .card.register-mode .slider {
+            transform: translateX(100%);
+        }
+
+        .inner {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .signup-msg, .signin-msg {
+            display: none;
+        }
+
+        .card:not(.register-mode) .signup-msg {
+            display: block;
+        }
+
+        .card.register-mode .signin-msg {
+            display: block;
+        }
+
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: var(--dark);
+        }
+
+        h3 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+        }
+
+        .lead {
+            color: var(--gray);
+            margin-bottom: 30px;
+        }
+
+        .inner p {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .input {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid var(--gray-light);
+            border-radius: 10px;
+            font-size: 1rem;
+            margin-bottom: 16px;
+            transition: all 0.3s;
+        }
+
+        .input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .password-field {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .password-field .input {
+            margin-bottom: 0;
+            padding-right: 50px;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            color: var(--gray);
+            transition: color 0.2s;
+        }
+
+        .password-toggle:hover {
+            color: var(--primary);
+        }
+
+        .password-toggle svg {
+            width: 20px;
+            height: 20px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+
+        .toggle-ghost {
+            background: transparent;
+            color: var(--white);
+            border: 2px solid var(--white);
+            padding: 12px 32px;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .toggle-ghost:hover {
+            background: var(--white);
+            color: var(--primary);
+        }
+
+        .message {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .message.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .message.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .signin-only, .register-only {
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .card {
+                grid-template-columns: 1fr;
+                max-width: 400px;
+            }
+
+            .panel-left, .panel-right {
+                padding: 40px 30px;
+            }
+
+            .slider {
+                display: none;
+            }
+
+            .card .signup-msg,
+            .card .signin-msg {
+                display: block !important;
+            }
+
+            h2 {
+                font-size: 1.5rem;
+            }
+
+            h3 {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="card" id="card">
+  <!-- LEFT: Sign In form (default view) -->
+  <div class="panel-left">
+    <div class="signin-only">
+      <h2>🔐 Accedi</h2>
+      <p class="lead">Benvenuto su My Gym Tracker</p>
+
+      <form id="loginForm">
+        <input class="input" id="login-username" placeholder="Username" autocomplete="username" required />
+        <div class="password-field">
+          <input class="input" id="login-password" placeholder="Password" type="password" autocomplete="current-password" required />
+          <button type="button" class="password-toggle" onclick="togglePassword('login-password', this)" aria-label="Mostra password">
+            <svg viewBox="0 0 24 24">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
+        </div>
+        <button type="submit" class="btn btn-primary">🚀 Accedi</button>
+      </form>
+      
+      <div id="login-message" class="message" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Create Account form (shown when register mode) -->
+  <div class="panel-right">
+    <div class="register-only">
+      <h2>📝 Registrati</h2>
+      <p class="lead">Crea il tuo account</p>
+
+      <form id="signupForm">
+        <input class="input" id="register-username" placeholder="Username" autocomplete="username" required />
+        <input class="input" id="register-email" placeholder="Email" type="email" autocomplete="email" required />
+        <div class="password-field">
+          <input class="input" id="register-password" placeholder="Password" type="password" autocomplete="new-password" required />
+          <button type="button" class="password-toggle" onclick="togglePassword('register-password', this)" aria-label="Mostra password">
+            <svg viewBox="0 0 24 24">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
+        </div>
+        <div class="password-field">
+          <input class="input" id="register-confirm-password" placeholder="Conferma Password" type="password" autocomplete="new-password" required />
+          <button type="button" class="password-toggle" onclick="togglePassword('register-confirm-password', this)" aria-label="Mostra password">
+            <svg viewBox="0 0 24 24">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
+        </div>
+        <button type="submit" class="btn btn-primary">📝 Crea Account</button>
+      </form>
+      
+      <div id="register-message" class="message" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- The sliding purple panel -->
+  <div class="slider" id="slider">
+    <div class="inner">
+      <div class="signup-msg">
+        <h3>Ciao! 👋</h3>
+        <p>Registrati per iniziare a tracciare i tuoi allenamenti</p>
+        <button class="toggle-ghost" id="btnSwitchToSignup">📝 Registrati</button>
+      </div>
+      <div class="signin-msg">
+        <h3>Bentornato! 🎉</h3>
+        <p>Accedi per continuare i tuoi allenamenti</p>
+        <button class="toggle-ghost" id="btnSwitchToSignin">🔐 Accedi</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Toggle password visibility
+function togglePassword(inputId, button) {
+    const input = document.getElementById(inputId);
+    if (input.type === 'password') {
+        input.type = 'text';
+        button.innerHTML = `
+            <svg viewBox="0 0 24 24">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+            </svg>
+        `;
+    } else {
+        input.type = 'password';
+        button.innerHTML = `
+            <svg viewBox="0 0 24 24">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+        `;
+    }
+}
+
+// Switch between login and register
+const card = document.getElementById('card');
+const btnSwitchToSignup = document.getElementById('btnSwitchToSignup');
+const btnSwitchToSignin = document.getElementById('btnSwitchToSignin');
+
+btnSwitchToSignup.addEventListener('click', () => {
+    card.classList.add('register-mode');
+});
+
+btnSwitchToSignin.addEventListener('click', () => {
+    card.classList.remove('register-mode');
+});
+
+// Login form
+document.getElementById('loginForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    const username = document.getElementById('login-username').value;
+    const password = document.getElementById('login-password').value;
+    
+    // Get users from localStorage
+    const users = JSON.parse(localStorage.getItem('gym-users') || '[]');
+    const user = users.find(u => u.username === username && u.password === password);
+    
+    const messageEl = document.getElementById('login-message');
+    
+    if (user) {
+        localStorage.setItem('gym-current-user', JSON.stringify(user));
+        messageEl.textContent = '✓ Login effettuato! Reindirizzamento...';
+        messageEl.className = 'message success';
+        messageEl.style.display = 'block';
+        
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 1000);
+    } else {
+        messageEl.textContent = '✗ Username o password errati';
+        messageEl.className = 'message error';
+        messageEl.style.display = 'block';
+    }
+});
+
+// Register form
+document.getElementById('signupForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    const username = document.getElementById('register-username').value;
+    const email = document.getElementById('register-email').value;
+    const password = document.getElementById('register-password').value;
+    const confirmPassword = document.getElementById('register-confirm-password').value;
+    
+    const messageEl = document.getElementById('register-message');
+    
+    if (password !== confirmPassword) {
+        messageEl.textContent = '✗ Le password non coincidono';
+        messageEl.className = 'message error';
+        messageEl.style.display = 'block';
+        return;
+    }
+    
+    if (password.length < 6) {
+        messageEl.textContent = '✗ La password deve essere di almeno 6 caratteri';
+        messageEl.className = 'message error';
+        messageEl.style.display = 'block';
+        return;
+    }
+    
+    // Get existing users
+    const users = JSON.parse(localStorage.getItem('gym-users') || '[]');
+    
+    // Check if username already exists
+    if (users.find(u => u.username === username)) {
+        messageEl.textContent = '✗ Username già esistente';
+        messageEl.className = 'message error';
+        messageEl.style.display = 'block';
+        return;
+    }
+    
+    // Check if email already exists
+    if (users.find(u => u.email === email)) {
+        messageEl.textContent = '✗ Email già registrata';
+        messageEl.className = 'message error';
+        messageEl.style.display = 'block';
+        return;
+    }
+    
+    // Create new user
+    const newUser = {
+        id: Date.now().toString(),
+        username,
+        email,
+        password,
+        createdAt: new Date().toISOString()
+    };
+    
+    users.push(newUser);
+    localStorage.setItem('gym-users', JSON.stringify(users));
+    localStorage.setItem('gym-current-user', JSON.stringify(newUser));
+    
+    messageEl.textContent = '✓ Account creato! Reindirizzamento...';
+    messageEl.className = 'message success';
+    messageEl.style.display = 'block';
+    
+    setTimeout(() => {
+        window.location.href = 'index.html';
+    }, 1000);
+});
+</script>
+
+</body>
+</html>

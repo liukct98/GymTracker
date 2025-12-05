@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Gym Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6366f1">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h1>💪 My Gym Tracker</h1>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <span id="userDisplay" style="opacity: 0.9;"></span>
+                    <button onclick="logout()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 0.9rem;">Esci</button>
+                </div>
+            </div>
+            <div class="header-stats">
+                <div class="stat-card">
+                    <span class="stat-label">Allenamenti</span>
+                    <span class="stat-value" id="totalWorkouts">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Questa settimana</span>
+                    <span class="stat-value" id="weekWorkouts">0</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="nav-tabs">
+            <button class="nav-tab active" data-tab="workouts">Allenamenti</button>
+            <button class="nav-tab" data-tab="exercises">Esercizi</button>
+            <button class="nav-tab" data-tab="stats">Statistiche</button>
+        </nav>
+
+        <!-- Workouts Tab -->
+        <div class="tab-content active" id="workouts-tab">
+            <div class="action-bar">
+                <button class="btn btn-primary" id="newWorkoutBtn">
+                    <span>➕</span> Nuovo Allenamento
+                </button>
+            </div>
+
+            <div class="workouts-list" id="workoutsList">
+                <!-- Workouts will be inserted here -->
+            </div>
+        </div>
+
+        <!-- Exercises Tab -->
+        <div class="tab-content" id="exercises-tab">
+            <div class="action-bar">
+                <button class="btn btn-primary" id="newExerciseBtn">
+                    <span>➕</span> Nuovo Esercizio
+                </button>
+            </div>
+
+            <div class="exercises-grid" id="exercisesGrid">
+                <!-- Exercises will be inserted here -->
+            </div>
+        </div>
+
+        <!-- Stats Tab -->
+        <div class="tab-content" id="stats-tab">
+            <div class="stats-container">
+                <div class="chart-card">
+                    <h3>Allenamenti per Mese</h3>
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>Esercizi Più Frequenti</h3>
+                    <div id="topExercises"></div>
+                </div>
+                <div class="chart-card">
+                    <h3>Progressi per Esercizio</h3>
+                    <select id="exerciseSelect" class="form-input">
+                        <option value="">Seleziona esercizio...</option>
+                    </select>
+                    <canvas id="progressChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: New Workout -->
+    <div class="modal" id="workoutModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Nuovo Allenamento</h2>
+                <button class="close-btn" onclick="closeModal('workoutModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="workoutForm">
+                    <div class="form-group">
+                        <label>Nome Allenamento</label>
+                        <input type="text" id="workoutName" class="form-input" placeholder="es. Push Day" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Data</label>
+                        <input type="date" id="workoutDate" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Note</label>
+                        <textarea id="workoutNotes" class="form-input" rows="3" placeholder="Note opzionali..."></textarea>
+                    </div>
+
+                    <h3>Esercizi</h3>
+                    <div id="workoutExercises">
+                        <!-- Exercise entries will be added here -->
+                    </div>
+                    <button type="button" class="btn btn-secondary" id="addExerciseBtn">
+                        <span>➕</span> Aggiungi Esercizio
+                    </button>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('workoutModal')">Annulla</button>
+                        <button type="submit" class="btn btn-primary">Salva Allenamento</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: New Exercise -->
+    <div class="modal" id="exerciseModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Nuovo Esercizio</h2>
+                <button class="close-btn" onclick="closeModal('exerciseModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="exerciseForm">
+                    <div class="form-group">
+                        <label>Nome Esercizio</label>
+                        <input type="text" id="exerciseName" class="form-input" placeholder="es. Panca Piana" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Categoria</label>
+                        <select id="exerciseCategory" class="form-input" required>
+                            <option value="">Seleziona...</option>
+                            <option value="petto">Petto</option>
+                            <option value="schiena">Schiena</option>
+                            <option value="gambe">Gambe</option>
+                            <option value="spalle">Spalle</option>
+                            <option value="braccia">Braccia</option>
+                            <option value="core">Core</option>
+                            <option value="cardio">Cardio</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Note</label>
+                        <textarea id="exerciseNotes" class="form-input" rows="3" placeholder="Tecnica, consigli..."></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('exerciseModal')">Annulla</button>
+                        <button type="submit" class="btn btn-primary">Salva Esercizio</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: View Workout Details -->
+    <div class="modal" id="workoutDetailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="detailWorkoutName"></h2>
+                <button class="close-btn" onclick="closeModal('workoutDetailModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="workoutDetailContent"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="editWorkoutBtn">✏️ Modifica</button>
+                    <button type="button" class="btn btn-primary" id="restartWorkoutBtn">🔄 Ricomincia</button>
+                    <button type="button" class="btn btn-danger" id="deleteWorkoutBtn">Elimina</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('workoutDetailModal')">Chiudi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
