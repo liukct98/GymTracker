@@ -50,26 +50,41 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check if user is logged in
     if (!checkAuth()) return;
     
-    initializeTabs();
-    initializeModals();
-    initializeForms();
-    updateDashboard();
-    renderWorkouts();
-    renderExercises();
-    renderStats();
-    
-    // Request notification permission
-    requestNotificationPermission();
-    
-    // Check for active timer
-    checkActiveTimer();
-    
-    // Set today's date as default
-    document.getElementById('workoutDate').valueAsDate = new Date();
-    
-    // Display username
-    updateUserDisplay();
+    // Load data from cloud first
+    loadDataFromCloud().then(() => {
+        initializeTabs();
+        initializeModals();
+        initializeForms();
+        updateDashboard();
+        renderWorkouts();
+        renderExercises();
+        renderStats();
+        
+        // Request notification permission
+        requestNotificationPermission();
+        
+        // Check for active timer
+        checkActiveTimer();
+        
+        // Set today's date as default
+        document.getElementById('workoutDate').valueAsDate = new Date();
+        
+        // Display username
+        updateUserDisplay();
+        
+        // Setup auto-sync every 5 minutes
+        setInterval(() => {
+            SupabaseStorage.fullSync();
+        }, 5 * 60 * 1000);
+    });
 });
+
+// Load data from cloud on startup
+async function loadDataFromCloud() {
+    if (typeof SupabaseStorage !== 'undefined') {
+        await SupabaseStorage.fullSync();
+    }
+}
 
 // Tab Navigation
 function initializeTabs() {
@@ -271,6 +286,11 @@ function saveWorkout(editingWorkoutId = null) {
     
     Storage.saveWorkouts(workouts);
     
+    // Sync to cloud
+    if (typeof SupabaseStorage !== 'undefined') {
+        SupabaseStorage.syncWorkouts();
+    }
+    
     closeModal('workoutModal');
     updateDashboard();
     renderWorkouts();
@@ -293,6 +313,11 @@ function saveExercise() {
     
     exercises.push(exercise);
     Storage.saveExercises(exercises);
+    
+    // Sync to cloud
+    if (typeof SupabaseStorage !== 'undefined') {
+        SupabaseStorage.syncExercises();
+    }
     
     closeModal('exerciseModal');
     renderExercises();
