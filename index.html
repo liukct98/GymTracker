@@ -46,8 +46,22 @@
                 <button class="btn btn-primary" id="newWorkoutBtn">
                     <span>➕</span> Nuovo Allenamento
                 </button>
+                <button class="btn btn-secondary" id="toggleViewBtn" onclick="toggleWorkoutView()">
+                    📅 Vista Calendario
+                </button>
             </div>
 
+            <!-- Calendar View -->
+            <div id="calendarView" style="display: none;">
+                <div class="calendar-header">
+                    <button class="btn-nav" onclick="changeMonth(-1)">‹</button>
+                    <h3 id="calendarMonthYear"></h3>
+                    <button class="btn-nav" onclick="changeMonth(1)">›</button>
+                </div>
+                <div class="calendar-grid" id="calendarGrid"></div>
+            </div>
+
+            <!-- List View -->
             <div class="workouts-list" id="workoutsList">
                 <!-- Workouts will be inserted here -->
             </div>
@@ -98,6 +112,12 @@
             <div class="modal-body">
                 <form id="workoutForm">
                     <div class="form-group">
+                        <label>Usa Template</label>
+                        <select id="templateSelect" class="form-input" onchange="loadTemplate(this.value)">
+                            <option value="">Nessun template</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label>Nome Allenamento</label>
                         <input type="text" id="workoutName" class="form-input" placeholder="es. Push Day" required>
                     </div>
@@ -119,6 +139,7 @@
                     </button>
 
                     <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="saveAsTemplate()">💾 Salva come Template</button>
                         <button type="button" class="btn btn-secondary" onclick="closeModal('workoutModal')">Annulla</button>
                         <button type="submit" class="btn btn-primary">Salva Allenamento</button>
                     </div>

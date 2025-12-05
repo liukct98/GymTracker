@@ -840,3 +840,126 @@ header h1 {
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
+/* Calendar View */
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: var(--white);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px var(--shadow);
+}
+
+.calendar-header h3 {
+    margin: 0;
+    color: var(--dark);
+    font-size: 1.3rem;
+}
+
+.btn-nav {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.2s;
+}
+
+.btn-nav:hover {
+    background: var(--primary-dark);
+    transform: scale(1.1);
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+    background: var(--white);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px var(--shadow);
+}
+
+.calendar-day-header {
+    text-align: center;
+    font-weight: 600;
+    color: var(--gray);
+    padding: 10px;
+    font-size: 0.9rem;
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    border: 2px solid var(--gray-light);
+    border-radius: 8px;
+    padding: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+}
+
+.calendar-day:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+}
+
+.calendar-day.other-month {
+    opacity: 0.3;
+    cursor: default;
+}
+
+.calendar-day.other-month:hover {
+    border-color: var(--gray-light);
+    transform: none;
+}
+
+.calendar-day.today {
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.calendar-day.has-workout {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
+    border-color: var(--primary);
+}
+
+.calendar-day-number {
+    font-weight: 600;
+    color: var(--dark);
+    margin-bottom: 4px;
+    font-size: 0.9rem;
+}
+
+.calendar-workout-indicator {
+    font-size: 0.7rem;
+    color: var(--primary);
+    text-align: center;
+    margin-top: auto;
+}
+
+@media (max-width: 768px) {
+    .calendar-grid {
+        gap: 5px;
+        padding: 10px;
+    }
+    
+    .calendar-day {
+        padding: 4px;
+        font-size: 0.8rem;
+    }
+    
+    .calendar-day-number {
+        font-size: 0.8rem;
+    }
+    
+    .calendar-workout-indicator {
+        font-size: 0.6rem;
+    }
+}
+

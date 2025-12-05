@@ -18,6 +18,12 @@ const Storage = {
     },
     saveExercises(exercises) {
         this.set('exercises', exercises);
+    },
+    getTemplates() {
+        return this.get('workout-templates') || [];
+    },
+    saveTemplates(templates) {
+        this.set('workout-templates', templates);
     }
 };
 
@@ -26,6 +32,8 @@ let currentWorkout = null;
 let editingExerciseIndex = null;
 let editingExerciseId = null;
 let currentUser = null;
+let currentCalendarDate = new Date();
+let isCalendarView = false;
 
 // Check authentication
 function checkAuth() {
@@ -133,6 +141,7 @@ function initializeModals() {
         document.getElementById('workoutDate').valueAsDate = new Date();
         document.getElementById('workoutExercises').innerHTML = '';
         addExerciseEntry();
+        updateTemplateSelect();
     });
     
     // New exercise button
@@ -393,12 +402,23 @@ function renderWorkouts() {
         return;
     }
     
-    container.innerHTML = workouts.map(workout => `
+    container.innerHTML = workouts.map(workout => {
+        const totalVolume = workout.exercises.reduce((total, ex) => {
+            return total + ex.sets.reduce((exTotal, set) => {
+                return exTotal + (set.reps * set.weight);
+            }, 0);
+        }, 0);
+        
+        return `
         <div class="workout-card" onclick="viewWorkout('${workout.id}')">
             <div class="workout-header">
                 <div>
                     <div class="workout-title">${workout.name}</div>
                     <div class="workout-date">${formatDate(workout.date)}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 0.85rem; color: var(--gray);">Volume</div>
+                    <div style="font-size: 1.1rem; font-weight: 600; color: var(--primary);">${totalVolume.toFixed(0)} kg</div>
                 </div>
             </div>
             <div class="workout-exercises">
@@ -408,13 +428,21 @@ function renderWorkouts() {
             </div>
             ${workout.notes ? `<div class="workout-notes">${workout.notes}</div>` : ''}
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function viewWorkout(workoutId) {
     const workouts = Storage.getWorkouts();
     const workout = workouts.find(w => w.id === workoutId);
     if (!workout) return;
+    
+    // Calculate total volume
+    const totalVolume = workout.exercises.reduce((total, ex) => {
+        return total + ex.sets.reduce((exTotal, set) => {
+            return exTotal + (set.reps * set.weight);
+        }, 0);
+    }, 0);
     
     document.getElementById('detailWorkoutName').textContent = workout.name;
     
@@ -423,15 +451,21 @@ function viewWorkout(workoutId) {
         <div class="workout-detail-info">
             <strong>Data:</strong> ${formatDate(workout.date)}
             ${workout.notes ? `<br><strong>Note:</strong> ${workout.notes}` : ''}
+            <br><strong>Volume Totale:</strong> <span style="color: var(--primary); font-weight: 600;">${totalVolume.toFixed(0)} kg</span>
         </div>
         <div id="timerDisplay" class="timer-display" style="display: none;">
             <div class="timer-label">Riposo</div>
             <div class="timer-value" id="timerValue">0:00</div>
             <button class="btn btn-secondary btn-sm" onclick="stopTimer()">Stop</button>
         </div>
-        ${workout.exercises.map((ex, exIndex) => `
+        ${workout.exercises.map((ex, exIndex) => {
+            const exerciseVolume = ex.sets.reduce((total, set) => total + (set.reps * set.weight), 0);
+            return `
             <div class="exercise-detail">
-                <h4>${ex.exerciseName}${ex.exerciseNotes ? ' <span style="opacity: 0.7; font-size: 0.85em;">- ' + ex.exerciseNotes + '</span>' : ''}</h4>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h4 style="margin: 0;">${ex.exerciseName}${ex.exerciseNotes ? ' <span style="opacity: 0.7; font-size: 0.85em;">- ' + ex.exerciseNotes + '</span>' : ''}</h4>
+                    <span style="color: var(--primary); font-weight: 600; font-size: 0.9rem;">Vol: ${exerciseVolume.toFixed(0)} kg</span>
+                </div>
                 <div class="sets-list">
                     ${ex.sets.map((set, index) => `
                         <div class="set-item-interactive" data-workout-id="${workout.id}" data-exercise-index="${exIndex}" data-set-index="${index}">
@@ -441,7 +475,7 @@ function viewWorkout(workoutId) {
                             </label>
                             <div class="set-info" onclick="editSet('${workout.id}', ${exIndex}, ${index})">
                                 <strong>Serie ${index + 1}</strong>
-                                <span>${set.reps} reps × ${set.weight} kg</span>
+                                <span>${set.reps} reps × ${set.weight} kg = ${(set.reps * set.weight).toFixed(0)} kg</span>
                                 ${set.rest ? `<span class="rest-time">⏱️ ${set.rest}s</span>` : ''}
                             </div>
                             ${set.rest && !set.completed ? `<button class="btn-timer" onclick="startTimer(${set.rest}, '${workout.id}', ${exIndex}, ${index})">⏱️</button>` : ''}
@@ -450,7 +484,8 @@ function viewWorkout(workoutId) {
                     `).join('')}
                 </div>
             </div>
-        `).join('')}
+            `;
+        }).join('')}
     `;
     
     document.getElementById('editWorkoutBtn').onclick = () => editWorkout(workoutId);
@@ -1105,4 +1140,271 @@ function formatDate(dateString) {
         month: 'long', 
         day: 'numeric' 
     });
+}
+
+// Calendar View Functions
+function toggleWorkoutView() {
+    isCalendarView = !isCalendarView;
+    const calendarView = document.getElementById('calendarView');
+    const listView = document.getElementById('workoutsList');
+    const toggleBtn = document.getElementById('toggleViewBtn');
+    
+    if (isCalendarView) {
+        calendarView.style.display = 'block';
+        listView.style.display = 'none';
+        toggleBtn.innerHTML = '📋 Vista Lista';
+        renderCalendar();
+    } else {
+        calendarView.style.display = 'none';
+        listView.style.display = 'block';
+        toggleBtn.innerHTML = '📅 Vista Calendario';
+    }
+}
+
+function changeMonth(delta) {
+    currentCalendarDate.setMonth(currentCalendarDate.getMonth() + delta);
+    renderCalendar();
+}
+
+function renderCalendar() {
+    const year = currentCalendarDate.getFullYear();
+    const month = currentCalendarDate.getMonth();
+    
+    // Update header
+    const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+                       'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+    document.getElementById('calendarMonthYear').textContent = `${monthNames[month]} ${year}`;
+    
+    // Get workouts for this month
+    const workouts = Storage.getWorkouts();
+    const workoutsByDate = {};
+    workouts.forEach(workout => {
+        const date = new Date(workout.date);
+        const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        if (!workoutsByDate[dateKey]) {
+            workoutsByDate[dateKey] = [];
+        }
+        workoutsByDate[dateKey].push(workout);
+    });
+    
+    // Get first day of month and total days
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
+    
+    // Build calendar grid
+    const grid = document.getElementById('calendarGrid');
+    grid.innerHTML = '';
+    
+    // Day headers
+    const dayNames = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+    dayNames.forEach(day => {
+        const header = document.createElement('div');
+        header.className = 'calendar-day-header';
+        header.textContent = day;
+        grid.appendChild(header);
+    });
+    
+    // Previous month days
+    const startDay = firstDay === 0 ? 6 : firstDay - 1;
+    for (let i = startDay - 1; i >= 0; i--) {
+        const day = daysInPrevMonth - i;
+        const cell = createCalendarDay(day, month - 1, year, true);
+        grid.appendChild(cell);
+    }
+    
+    // Current month days
+    const today = new Date();
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
+        const workoutsOnDay = workoutsByDate[dateKey] || [];
+        const cell = createCalendarDay(day, month, year, false, isToday, workoutsOnDay);
+        grid.appendChild(cell);
+    }
+    
+    // Next month days
+    const totalCells = startDay + daysInMonth;
+    const remainingCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+    for (let day = 1; day <= remainingCells; day++) {
+        const cell = createCalendarDay(day, month + 1, year, true);
+        grid.appendChild(cell);
+    }
+}
+
+function createCalendarDay(day, month, year, isOtherMonth, isToday = false, workouts = []) {
+    const cell = document.createElement('div');
+    cell.className = 'calendar-day';
+    
+    if (isOtherMonth) {
+        cell.classList.add('other-month');
+    }
+    if (isToday) {
+        cell.classList.add('today');
+    }
+    if (workouts.length > 0) {
+        cell.classList.add('has-workout');
+    }
+    
+    const dayNumber = document.createElement('div');
+    dayNumber.className = 'calendar-day-number';
+    dayNumber.textContent = day;
+    cell.appendChild(dayNumber);
+    
+    if (workouts.length > 0) {
+        const indicator = document.createElement('div');
+        indicator.className = 'calendar-workout-indicator';
+        indicator.textContent = `${workouts.length} 🏋️`;
+        cell.appendChild(indicator);
+        
+        cell.onclick = () => {
+            if (workouts.length === 1) {
+                viewWorkout(workouts[0].id);
+            } else {
+                showWorkoutsForDay(workouts);
+            }
+        };
+    }
+    
+    return cell;
+}
+
+function showWorkoutsForDay(workouts) {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'flex';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Allenamenti del ${formatDate(workouts[0].date)}</h2>
+                <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+            </div>
+            <div class="modal-body">
+                ${workouts.map(workout => `
+                    <div class="workout-card" onclick="viewWorkout('${workout.id}'); this.closest('.modal').remove();" style="margin-bottom: 15px;">
+                        <div class="workout-header">
+                            <h3>${workout.name}</h3>
+                            <span class="workout-exercises-count">${workout.exercises.length} esercizi</span>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+// Workout Templates Functions
+function updateTemplateSelect() {
+    const templates = Storage.getTemplates();
+    const select = document.getElementById('templateSelect');
+    
+    select.innerHTML = '<option value="">Nessun template</option>' +
+        templates.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+}
+
+function loadTemplate(templateId) {
+    if (!templateId) return;
+    
+    const templates = Storage.getTemplates();
+    const template = templates.find(t => t.id === templateId);
+    if (!template) return;
+    
+    document.getElementById('workoutName').value = template.name;
+    document.getElementById('workoutNotes').value = template.notes || '';
+    
+    // Clear existing exercises
+    document.getElementById('workoutExercises').innerHTML = '';
+    
+    // Add exercises from template
+    template.exercises.forEach(ex => {
+        addExerciseEntry();
+        const entries = document.getElementById('workoutExercises').children;
+        const lastEntry = entries[entries.length - 1];
+        
+        // Set exercise
+        const select = lastEntry.querySelector('.exercise-select');
+        select.value = ex.exerciseId;
+        
+        // Add sets
+        const setsContainer = lastEntry.querySelector('.sets-container');
+        setsContainer.innerHTML = '';
+        
+        ex.sets.forEach((set, index) => {
+            const setRow = document.createElement('div');
+            setRow.className = 'set-row';
+            setRow.innerHTML = `
+                <span class="set-label">Serie ${index + 1}:</span>
+                <input type="number" placeholder="Reps" class="set-input" min="1" value="${set.reps}" required>
+                <input type="number" placeholder="Kg" class="set-input" min="0" step="0.5" value="${set.weight}" required>
+                <input type="number" placeholder="Riposo (sec)" class="set-input" min="0" step="5" value="${set.rest || 90}">
+                ${index > 0 ? '<button type="button" class="remove-set" onclick="this.parentElement.remove()">🗑️</button>' : ''}
+            `;
+            setsContainer.appendChild(setRow);
+        });
+    });
+}
+
+function saveAsTemplate() {
+    const name = document.getElementById('workoutName').value;
+    if (!name) {
+        alert('Inserisci un nome per l\'allenamento prima di salvarlo come template');
+        return;
+    }
+    
+    const templateName = prompt('Nome del template:', name);
+    if (!templateName) return;
+    
+    const notes = document.getElementById('workoutNotes').value;
+    const exerciseEntries = document.querySelectorAll('.exercise-entry');
+    const exercises = [];
+    
+    exerciseEntries.forEach(entry => {
+        const exerciseId = entry.querySelector('.exercise-select').value;
+        if (!exerciseId) return;
+        
+        const exerciseData = Storage.getExercises().find(ex => ex.id === exerciseId);
+        const sets = [];
+        
+        const setRows = entry.querySelectorAll('.set-row');
+        setRows.forEach(row => {
+            const inputs = row.querySelectorAll('.set-input');
+            if (inputs.length >= 2) {
+                sets.push({
+                    reps: parseInt(inputs[0].value),
+                    weight: parseFloat(inputs[1].value),
+                    rest: inputs.length >= 3 ? parseInt(inputs[2].value) || 90 : 90
+                });
+            }
+        });
+        
+        if (sets.length > 0) {
+            exercises.push({
+                exerciseId,
+                exerciseName: exerciseData.name,
+                exerciseNotes: exerciseData.notes || '',
+                sets
+            });
+        }
+    });
+    
+    if (exercises.length === 0) {
+        alert('Aggiungi almeno un esercizio prima di salvare come template');
+        return;
+    }
+    
+    const templates = Storage.getTemplates();
+    const template = {
+        id: Date.now().toString(),
+        name: templateName,
+        notes,
+        exercises,
+        createdAt: new Date().toISOString()
+    };
+    
+    templates.push(template);
+    Storage.saveTemplates(templates);
+    updateTemplateSelect();
+    
+    alert(`✅ Template "${templateName}" salvato!`);
 }
