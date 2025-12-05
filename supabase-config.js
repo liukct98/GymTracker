@@ -2,6 +2,9 @@
 const SUPABASE_URL = 'https://wqrbcfanfasbceiqmubq.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxcmJjZmFuZmFzYmNlaXFtdWJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NDY0MDMsImV4cCI6MjA4MDQyMjQwM30.DTBb_4NJSTNkFLysLDSvMVL90FaJFQG3f3v1ULPAjlk';
 
+// Admin emails
+const ADMIN_EMAILS = ['lca.valenti@gmail.com'];
+
 // Initialize Supabase client
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -82,6 +85,12 @@ const SupabaseStorage = {
         const user = this.getCurrentUser();
         if (!user) return;
 
+        // Check if user is admin
+        if (!user.isAdmin) {
+            console.log('Only admin can modify exercises');
+            return { success: false, error: 'Permission denied' };
+        }
+
         const exercises = JSON.parse(localStorage.getItem('exercises') || '[]');
         
         try {
@@ -90,7 +99,6 @@ const SupabaseStorage = {
                 .upsert(
                     exercises.map(ex => ({
                         id: ex.id,
-                        user_id: user.id,
                         name: ex.name,
                         category: ex.category,
                         notes: ex.notes,
@@ -110,14 +118,10 @@ const SupabaseStorage = {
 
     // Load exercises from cloud
     async loadExercises() {
-        const user = this.getCurrentUser();
-        if (!user) return [];
-
         try {
             const { data, error } = await supabase
                 .from('exercises')
                 .select('*')
-                .eq('user_id', user.id)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;

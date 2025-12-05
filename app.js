@@ -136,6 +136,10 @@ function initializeModals() {
     
     // New exercise button
     document.getElementById('newExerciseBtn').addEventListener('click', () => {
+        if (!currentUser || !currentUser.isAdmin) {
+            alert('⚠️ Solo gli admin possono creare nuovi esercizi');
+            return;
+        }
         openModal('exerciseModal');
         document.getElementById('exerciseForm').reset();
     });
@@ -635,7 +639,7 @@ function renderExercises() {
         <div class="exercise-card">
             <div class="exercise-header">
                 <div class="exercise-name">${exercise.name}</div>
-                <button class="delete-exercise" onclick="deleteExercise('${exercise.id}')" title="Elimina">🗑️</button>
+                ${currentUser && currentUser.isAdmin ? `<button class="delete-exercise" onclick="deleteExercise('${exercise.id}')" title="Elimina">🗑️</button>` : ''}
             </div>
             <span class="category-badge ${exercise.category}">${exercise.category}</span>
             ${exercise.notes ? `<div class="exercise-stats" style="margin-top: 10px;">${exercise.notes}</div>` : ''}
@@ -647,11 +651,21 @@ function renderExercises() {
 }
 
 function deleteExercise(exerciseId) {
+    if (!currentUser || !currentUser.isAdmin) {
+        alert('⚠️ Solo gli admin possono eliminare esercizi');
+        return;
+    }
+    
     if (!confirm('Sei sicuro di voler eliminare questo esercizio?')) return;
     
     let exercises = Storage.getExercises();
     exercises = exercises.filter(ex => ex.id !== exerciseId);
     Storage.saveExercises(exercises);
+    
+    // Sync to cloud
+    if (typeof SupabaseStorage !== 'undefined') {
+        SupabaseStorage.syncExercises();
+    }
     
     renderExercises();
 }
@@ -1028,7 +1042,14 @@ function toggleSetCompletion(workoutId, exIndex, setIndex) {
 function updateUserDisplay() {
     const userDisplay = document.getElementById('userDisplay');
     if (userDisplay && currentUser) {
-        userDisplay.textContent = `👤 ${currentUser.username}`;
+        const adminBadge = currentUser.isAdmin ? ' 👑' : '';
+        userDisplay.textContent = `👤 ${currentUser.username}${adminBadge}`;
+    }
+    
+    // Show/hide exercise button based on admin status
+    const newExerciseBtn = document.getElementById('newExerciseBtn');
+    if (newExerciseBtn && currentUser) {
+        newExerciseBtn.style.display = currentUser.isAdmin ? 'flex' : 'none';
     }
 }
 
