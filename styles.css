@@ -441,11 +441,25 @@ header h1 {
 
 .modal-footer {
     display: flex;
-    gap: 15px;
+    gap: 10px;
     justify-content: flex-end;
     margin-top: 25px;
     padding-top: 20px;
     border-top: 1px solid var(--gray-light);
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .modal-footer {
+        gap: 8px;
+    }
+    
+    .modal-footer .btn {
+        font-size: 0.85rem;
+        padding: 10px 12px;
+        flex: 1 1 auto;
+        min-width: 90px;
+    }
 }
 
 /* Form */
@@ -570,16 +584,86 @@ header h1 {
 
 /* Responsive */
 @media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+
     header h1 {
-        font-size: 2rem;
+        font-size: 1.5rem;
+    }
+
+    .header-stats {
+        gap: 10px;
+    }
+
+    .stat-card {
+        padding: 12px 18px;
+        flex: 1;
+        min-width: 140px;
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
     }
 
     .nav-tabs {
         overflow-x: auto;
+        gap: 5px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .nav-tab {
+        padding: 12px 18px;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+
+    .action-bar {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .action-bar .btn {
+        width: 100%;
+    }
+
+    .modal-content {
+        width: 95%;
+        max-height: 85vh;
+        margin: 10px;
+    }
+
+    .modal-header {
+        padding: 20px;
+    }
+
+    .modal-header h2 {
+        font-size: 1.4rem;
+    }
+
+    .modal-body {
+        padding: 20px;
     }
 
     .exercises-grid {
         grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .exercise-card {
+        padding: 15px;
+    }
+
+    .workout-card {
+        padding: 15px;
+    }
+
+    .workout-title {
+        font-size: 1.1rem;
     }
 
     .set-row {
@@ -589,6 +673,121 @@ header h1 {
 
     .set-label {
         grid-column: 1 / -1;
+        font-size: 0.9rem;
+    }
+
+    .set-input {
+        padding: 8px;
+        font-size: 0.9rem;
+    }
+
+    .btn {
+        padding: 10px 16px;
+        font-size: 0.9rem;
+    }
+
+    .btn-secondary {
+        padding: 8px 14px;
+        font-size: 0.85rem;
+    }
+
+    .exercise-entry {
+        padding: 12px;
+    }
+
+    .remove-exercise {
+        width: 28px;
+        height: 28px;
+        font-size: 1.2rem;
+    }
+
+    /* Set items mobile */
+    .set-item-interactive {
+        padding: 12px;
+        gap: 8px;
+    }
+
+    .set-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .set-info span {
+        font-size: 0.85rem;
+        display: block;
+        margin-top: 2px;
+    }
+
+    .rest-time {
+        font-size: 0.75rem !important;
+    }
+
+    .btn-timer, .btn-edit-set {
+        padding: 8px;
+        font-size: 0.9rem;
+        min-width: 36px;
+        height: 36px;
+    }
+
+    .checkmark {
+        width: 24px;
+        height: 24px;
+        border-width: 2px;
+    }
+
+    .set-checkbox input[type="checkbox"]:checked ~ .checkmark:after {
+        left: 7px;
+        top: 3px;
+        width: 5px;
+        height: 10px;
+    }
+
+    /* Exercise detail mobile */
+    .exercise-detail {
+        padding: 15px;
+    }
+
+    .exercise-detail h4 {
+        font-size: 1.05rem;
+    }
+
+    .workout-detail-info {
+        font-size: 0.9rem;
+    }
+
+    /* Timer mobile */
+    .timer-display {
+        padding: 15px;
+    }
+
+    .timer-value {
+        font-size: 2rem;
+    }
+
+    .timer-label {
+        font-size: 0.85rem;
+    }
+
+    /* Form inputs mobile */
+    .form-input, .form-input select, .form-input textarea {
+        font-size: 0.95rem;
+        padding: 10px;
+    }
+
+    /* Exercise tags mobile */
+    .exercise-tag {
+        font-size: 0.75rem;
+        padding: 4px 10px;
+    }
+
+    .workout-exercises {
+        gap: 6px;
+    }
+
+    /* Category badges mobile */
+    .category-badge {
+        font-size: 0.7rem;
+        padding: 4px 10px;
     }
 }
 
@@ -963,3 +1162,78 @@ header h1 {
     }
 }
 
+/* Extra small screens */
+@media (max-width: 400px) {
+    .container {
+        padding: 10px;
+    }
+
+    header h1 {
+        font-size: 1.3rem;
+    }
+
+    .stat-card {
+        padding: 10px 14px;
+        min-width: 120px;
+    }
+
+    .stat-value {
+        font-size: 1.3rem;
+    }
+
+    .nav-tab {
+        padding: 10px 14px;
+        font-size: 0.85rem;
+    }
+
+    .modal-content {
+        width: 98%;
+    }
+
+    .modal-header {
+        padding: 15px;
+    }
+
+    .modal-header h2 {
+        font-size: 1.2rem;
+    }
+
+    .modal-body {
+        padding: 15px;
+    }
+
+    .modal-footer .btn {
+        min-width: 70px;
+        font-size: 0.8rem;
+        padding: 8px 10px;
+    }
+
+    .btn {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+    }
+
+    .set-item-interactive {
+        padding: 10px;
+        gap: 6px;
+    }
+
+    .set-info strong {
+        font-size: 0.9rem;
+    }
+
+    .set-info span {
+        font-size: 0.8rem;
+    }
+
+    .btn-timer, .btn-edit-set {
+        padding: 6px;
+        min-width: 32px;
+        height: 32px;
+    }
+
+    .checkmark {
+        width: 22px;
+        height: 22px;
+    }
+}
