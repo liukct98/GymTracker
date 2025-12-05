@@ -24,6 +24,7 @@ const Storage = {
 // App State
 let currentWorkout = null;
 let editingExerciseIndex = null;
+let editingExerciseId = null;
 let currentUser = null;
 
 // Check authentication
@@ -187,7 +188,7 @@ function addExerciseEntry() {
             <label>Esercizio</label>
             <select class="form-input exercise-select" required>
                 <option value="">Seleziona esercizio...</option>
-                ${exercises.map(ex => `<option value="${ex.id}">${ex.name}</option>`).join('')}
+                ${exercises.map(ex => `<option value="${ex.id}" data-notes="${ex.notes || ''}">${ex.name}${ex.notes ? ' - ' + ex.notes : ''}</option>`).join('')}
             </select>
         </div>
         <div class="sets-container" data-exercise-index="${index}">
@@ -251,6 +252,7 @@ function saveWorkout(editingWorkoutId = null) {
             exercises.push({
                 exerciseId,
                 exerciseName: exerciseData.name,
+                exerciseNotes: exerciseData.notes || '',
                 sets
             });
         }
@@ -301,21 +303,56 @@ function saveWorkout(editingWorkoutId = null) {
     renderStats();
 }
 
+function editExercise(exerciseId) {
+    if (!currentUser || !currentUser.isAdmin) {
+        alert('⚠️ Solo gli admin possono modificare esercizi');
+        return;
+    }
+    
+    const exercises = Storage.getExercises();
+    const exercise = exercises.find(ex => ex.id === exerciseId);
+    if (!exercise) return;
+    
+    editingExerciseId = exerciseId;
+    document.getElementById('exerciseName').value = exercise.name;
+    document.getElementById('exerciseCategory').value = exercise.category;
+    document.getElementById('exerciseNotes').value = exercise.notes || '';
+    document.querySelector('#exerciseModal h2').textContent = '✏️ Modifica Esercizio';
+    openModal('exerciseModal');
+}
+
 function saveExercise() {
     const name = document.getElementById('exerciseName').value;
     const category = document.getElementById('exerciseCategory').value;
     const notes = document.getElementById('exerciseNotes').value;
     
     const exercises = Storage.getExercises();
-    const exercise = {
-        id: Date.now().toString(),
-        name,
-        category,
-        notes,
-        createdAt: new Date().toISOString()
-    };
     
-    exercises.push(exercise);
+    if (editingExerciseId) {
+        // Modifica esercizio esistente
+        const index = exercises.findIndex(ex => ex.id === editingExerciseId);
+        if (index !== -1) {
+            exercises[index] = {
+                ...exercises[index],
+                name,
+                category,
+                notes,
+                updatedAt: new Date().toISOString()
+            };
+        }
+        editingExerciseId = null;
+    } else {
+        // Nuovo esercizio
+        const exercise = {
+            id: Date.now().toString(),
+            name,
+            category,
+            notes,
+            createdAt: new Date().toISOString()
+        };
+        exercises.push(exercise);
+    }
+    
     Storage.saveExercises(exercises);
     
     // Sync to cloud
@@ -323,6 +360,7 @@ function saveExercise() {
         SupabaseStorage.syncExercises();
     }
     
+    document.querySelector('#exerciseModal h2').textContent = '🏋️ Nuovo Esercizio';
     closeModal('exerciseModal');
     renderExercises();
 }
@@ -393,7 +431,7 @@ function viewWorkout(workoutId) {
         </div>
         ${workout.exercises.map((ex, exIndex) => `
             <div class="exercise-detail">
-                <h4>${ex.exerciseName}</h4>
+                <h4>${ex.exerciseName}${ex.exerciseNotes ? ' <span style="opacity: 0.7; font-size: 0.85em;">- ' + ex.exerciseNotes + '</span>' : ''}</h4>
                 <div class="sets-list">
                     ${ex.sets.map((set, index) => `
                         <div class="set-item-interactive" data-workout-id="${workout.id}" data-exercise-index="${exIndex}" data-set-index="${index}">
@@ -639,7 +677,12 @@ function renderExercises() {
         <div class="exercise-card">
             <div class="exercise-header">
                 <div class="exercise-name">${exercise.name}</div>
-                ${currentUser && currentUser.isAdmin ? `<button class="delete-exercise" onclick="deleteExercise('${exercise.id}')" title="Elimina">🗑️</button>` : ''}
+                ${currentUser && currentUser.isAdmin ? `
+                    <div>
+                        <button class="btn-edit-exercise" onclick="editExercise('${exercise.id}')" title="Modifica">✏️</button>
+                        <button class="delete-exercise" onclick="deleteExercise('${exercise.id}')" title="Elimina">🗑️</button>
+                    </div>
+                ` : ''}
             </div>
             <span class="category-badge ${exercise.category}">${exercise.category}</span>
             ${exercise.notes ? `<div class="exercise-stats" style="margin-top: 10px;">${exercise.notes}</div>` : ''}
