@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "GymTracker",
+    "slug": "gymtracker",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/newIcon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0f172a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.gymtracker.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/newIcon.png",
+        "backgroundColor": "#0f172a"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.gymtracker.app",
+      "permissions": [
+        "NOTIFICATIONS"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "notification": {
+      "icon": "./assets/newIcon.png",
+      "color": "#6366f1"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "1ef7d34f-2a8a-4bd3-a1c4-34ccc3843d95"
+      }
+    }
+  }
+}

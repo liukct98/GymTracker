@@ -1,0 +1,512 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  TextInput,
+  Modal,
+  RefreshControl,
+} from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import { Storage } from '../services/storage';
+import { SupabaseStorage } from '../services/supabaseStorage';
+import { useAuth } from '../context/AuthContext';
+import { colors } from '../utils/colors';
+
+const ExercisesScreen = () => {
+  const [exercises, setExercises] = useState([]);
+  const [filteredExercises, setFilteredExercises] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('Tutti');
+  const [modalVisible, setModalVisible] = useState(false);
+  const [editingExercise, setEditingExercise] = useState(null);
+  const [formData, setFormData] = useState({ name: '', category: 'Petto', notes: '' });
+  const [refreshing, setRefreshing] = useState(false);
+  const { user } = useAuth();
+
+  const categories = ['Tutti', 'Petto', 'Schiena', 'Spalle', 'Gambe', 'Braccia', 'Core', 'Cardio'];
+
+  useEffect(() => {
+    loadExercises();
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadExercises();
+    }, [])
+  );
+
+  useEffect(() => {
+    filterExercises();
+  }, [exercises, searchQuery, selectedCategory]);
+  const loadExercises = async () => {
+    console.log('Loading exercises...');
+    const data = await Storage.getExercises();
+    console.log('Exercises loaded:', data?.length || 0);
+    setExercises(data);
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await SupabaseStorage.loadExercises();
+    await loadExercises();
+    setRefreshing(false);
+  };
+
+  const filterExercises = () => {
+  const filterExercises = () => {
+    let filtered = exercises;
+
+    if (selectedCategory !== 'Tutti') {
+      filtered = filtered.filter((ex) => ex.category === selectedCategory);
+    }
+
+    if (searchQuery) {
+      filtered = filtered.filter((ex) =>
+        ex.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    setFilteredExercises(filtered);
+  };
+
+  const openModal = (exercise = null) => {
+    if (exercise) {
+      setEditingExercise(exercise);
+      setFormData({
+        name: exercise.name,
+        category: exercise.category,
+        notes: exercise.notes || '',
+      });
+    } else {
+      setEditingExercise(null);
+      setFormData({ name: '', category: 'Petto', notes: '' });
+    }
+    setModalVisible(true);
+  };
+
+  const saveExercise = async () => {
+    if (!formData.name.trim()) {
+      Alert.alert('Errore', 'Inserisci il nome dell\'esercizio');
+      return;
+    }
+
+    let updated;
+    if (editingExercise) {
+      updated = exercises.map((ex) =>
+        ex.id === editingExercise.id
+          ? { ...ex, ...formData }
+          : ex
+      );
+    } else {
+      const newExercise = {
+        id: Date.now().toString(),
+        ...formData,
+        createdAt: new Date().toISOString(),
+      };
+      updated = [...exercises, newExercise];
+    }
+
+    await Storage.saveExercises(updated);
+    await SupabaseStorage.syncExercises();
+    setExercises(updated);
+    setModalVisible(false);
+  };
+
+  const deleteExercise = async (id) => {
+    Alert.alert(
+      'Elimina Esercizio',
+      'Sei sicuro di voler eliminare questo esercizio?',
+      [
+        { text: 'Annulla', style: 'cancel' },
+        {
+          text: 'Elimina',
+          style: 'destructive',
+          onPress: async () => {
+            const updated = exercises.filter((ex) => ex.id !== id);
+            await Storage.saveExercises(updated);
+            await SupabaseStorage.syncExercises();
+            setExercises(updated);
+          },
+        },
+      ]
+    );
+  };
+
+  const renderExercise = ({ item }) => (
+    <View style={styles.exerciseCard}>
+      <View style={styles.exerciseInfo}>
+        <Text style={styles.exerciseName}>{item.name}</Text>
+        <Text style={styles.exerciseCategory}>{item.category}</Text>
+        {item.notes && (
+          <Text style={styles.exerciseNotes} numberOfLines={2}>
+            {item.notes}
+          </Text>
+        )}
+      </View>
+      <View style={styles.exerciseActions}>
+        {user?.isAdmin && (
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => openModal(item)}
+          >
+            <Ionicons name="pencil" size={20} color={colors.primary} />
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => deleteExercise(item.id)}
+        >
+          <Ionicons name="trash-outline" size={20} color={colors.danger} />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.searchBar}>
+        <Ionicons name="search" size={20} color={colors.textSecondary} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Cerca esercizio..."
+          placeholderTextColor={colors.textSecondary}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
+
+      <FlatList
+        horizontal
+        data={categories}
+        keyExtractor={(item) => item}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[
+              styles.categoryChip,
+              selectedCategory === item && styles.categoryChipActive,
+            ]}
+            onPress={() => setSelectedCategory(item)}
+          >
+            <Text
+              style={[
+                styles.categoryChipText,
+                selectedCategory === item && styles.categoryChipTextActive,
+              ]}
+            >
+              {item}
+            </Text>
+          </TouchableOpacity>
+        )}
+        contentContainerStyle={styles.categoriesList}
+        showsHorizontalScrollIndicator={false}
+      />
+
+      <FlatList
+        data={filteredExercises}
+        renderItem={renderExercise}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.list}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>Nessun esercizio trovato</Text>
+            <Text style={styles.emptySubtext}>
+              Premi + per aggiungere un esercizio
+            </Text>
+          </View>
+        }
+      />
+
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => openModal()}
+      >
+        <Ionicons name="add" size={28} color={colors.white} />
+      </TouchableOpacity>
+
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {editingExercise ? 'Modifica Esercizio' : 'Nuovo Esercizio'}
+              </Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <TextInput
+              style={styles.input}
+              placeholder="Nome esercizio"
+              placeholderTextColor={colors.textSecondary}
+              value={formData.name}
+              onChangeText={(text) => setFormData({ ...formData, name: text })}
+            />
+
+            <View style={styles.categorySelector}>
+              {categories.slice(1).map((cat) => (
+                <TouchableOpacity
+                  key={cat}
+                  style={[
+                    styles.categoryOption,
+                    formData.category === cat && styles.categoryOptionActive,
+                  ]}
+                  onPress={() => setFormData({ ...formData, category: cat })}
+                >
+                  <Text
+                    style={[
+                      styles.categoryOptionText,
+                      formData.category === cat && styles.categoryOptionTextActive,
+                    ]}
+                  >
+                    {cat}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="Note (opzionale)"
+              placeholderTextColor={colors.textSecondary}
+              value={formData.notes}
+              onChangeText={(text) => setFormData({ ...formData, notes: text })}
+              multiline
+              numberOfLines={4}
+            />
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonSecondary]}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={styles.buttonSecondaryText}>Annulla</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonPrimary]}
+                onPress={saveExercise}
+              >
+                <Text style={styles.buttonPrimaryText}>Salva</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    margin: 16,
+    marginBottom: 8,
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 16,
+  },
+  categoriesList: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  categoryChip: {
+    backgroundColor: colors.surface,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
+  },
+  categoryChipActive: {
+    backgroundColor: colors.primary,
+  },
+  categoryChipText: {
+    color: colors.text,
+    fontSize: 14,
+  },
+  categoryChipTextActive: {
+    color: colors.white,
+    fontWeight: 'bold',
+  },
+  list: {
+    padding: 16,
+  },
+  exerciseCard: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  exerciseInfo: {
+    flex: 1,
+  },
+  exerciseName: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  exerciseCategory: {
+    color: colors.primary,
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  exerciseNotes: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    marginTop: 4,
+  },
+  exerciseActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
+    padding: 8,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    marginTop: 60,
+  },
+  emptyText: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    color: colors.textSecondary,
+    fontSize: 14,
+  },
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 20,
+    backgroundColor: colors.primary,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  modalTitle: {
+    color: colors.text,
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  input: {
+    backgroundColor: colors.surfaceLight,
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    fontSize: 16,
+    color: colors.text,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  textArea: {
+    height: 100,
+    textAlignVertical: 'top',
+  },
+  categorySelector: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  categoryOption: {
+    backgroundColor: colors.surfaceLight,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  categoryOptionActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  categoryOptionText: {
+    color: colors.text,
+    fontSize: 14,
+  },
+  categoryOptionTextActive: {
+    color: colors.white,
+    fontWeight: 'bold',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  button: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buttonPrimary: {
+    backgroundColor: colors.primary,
+  },
+  buttonPrimaryText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  buttonSecondary: {
+    backgroundColor: colors.surfaceLight,
+  },
+  buttonSecondaryText: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});
+
+export default ExercisesScreen;
