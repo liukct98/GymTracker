@@ -4,7 +4,7 @@ on:
   schedule:
     # Esegue ogni 5 giorni alle 8:00 UTC (per evitare la pausa a 7 giorni)
     - cron: '0 8 */5 * *'
-  workflow_dispatch: # Permette esecuzione manuale dal pannello GitHub
+  workflow_dispatch: # Permette esecuzione manuale
 
 jobs:
   keep-alive:
