@@ -1,0 +1,27 @@
+name: Keep Supabase Active
+
+on:
+  schedule:
+    # Esegue ogni 5 giorni alle 8:00 UTC (per evitare la pausa a 7 giorni)
+    - cron: '0 8 */5 * *'
+  workflow_dispatch: # Permette esecuzione manuale dal pannello GitHub
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Keep Supabase database alive
+        run: |
+          curl -X POST \
+            'https://wqrbcfanfasbceiqmubq.supabase.co/rest/v1/rpc/ping' \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal"
+        continue-on-error: true
+      
+      - name: Alternative keep-alive (query semplice)
+        run: |
+          # Query di base per mantenere attivo il database
+          curl -X GET \
+            'https://wqrbcfanfasbceiqmubq.supabase.co/rest/v1/' \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}"
