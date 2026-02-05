@@ -68,6 +68,18 @@ const Storage = {
   async removeCurrentUser() {
     await AsyncStorage.removeItem('gym-current-user');
   },
+
+  async getActiveWorkout() {
+    return (await this.get('active-workout')) || null;
+  },
+
+  async saveActiveWorkout(workoutState) {
+    await this.set('active-workout', workoutState);
+  },
+
+  async clearActiveWorkout() {
+    await AsyncStorage.removeItem('active-workout');
+  },
 };
 
 export default Storage;

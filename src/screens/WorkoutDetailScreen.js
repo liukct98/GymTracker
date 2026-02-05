@@ -29,9 +29,28 @@ const WorkoutDetailScreen = ({ route, navigation }) => {
   const setRowRefs = useRef({});
   const exerciseCardRefs = useRef({});
 
-  // Aggiorna il workout quando arrivano nuovi params
+  // Carica l'allenamento in corso al mount
   useEffect(() => {
-    if (route.params?.workout) {
+    loadActiveWorkout();
+  }, []);
+
+  const loadActiveWorkout = async () => {
+    const activeWorkout = await Storage.getActiveWorkout();
+    
+    // Se c'è un allenamento attivo e corrisponde a questo workout
+    if (activeWorkout && activeWorkout.workoutId === route.params.workout.id) {
+      setWorkout(activeWorkout.workout);
+      setWorkoutInProgress(true);
+      setWorkoutStartTime(activeWorkout.startTime);
+      // La durata verrà ricalcolata dal timer
+    } else if (route.params?.workout) {
+      setWorkout(route.params.workout);
+    }
+  };
+
+  // Aggiorna il workout quando arrivano nuovi params (ma non sovrascrive l'allenamento attivo)
+  useEffect(() => {
+    if (route.params?.workout && !workoutInProgress) {
       setWorkout(route.params.workout);
     }
   }, [route.params?.workout]);
@@ -55,6 +74,29 @@ const WorkoutDetailScreen = ({ route, navigation }) => {
     const updatedWorkout = { ...workout };
     const set = updatedWorkout.exercises[exIndex].sets[setIndex];
     set.completed = !set.completed;
+    
+    // Se la serie viene marcata come completata e l'allenamento non è ancora iniziato, avvialo
+    if (set.completed && !workoutInProgress) {
+      const startTime = Date.now();
+      setWorkoutInProgress(true);
+      setWorkoutStartTime(startTime);
+      setWorkoutDuration(0);
+      
+      // Salva lo stato dell'allenamento attivo
+      await Storage.saveActiveWorkout({
+        workoutId: workout.id,
+        workout: updatedWorkout,
+        startTime: startTime,
+      });
+    } else if (workoutInProgress) {
+      // Aggiorna l'allenamento attivo con le nuove serie completate
+      await Storage.saveActiveWorkout({
+        workoutId: workout.id,
+        workout: updatedWorkout,
+        startTime: workoutStartTime,
+      });
+    }
+    
     setWorkout({ ...updatedWorkout });
     // Salva nel calendario se completato, altrimenti aggiorna il template
     if (workout.completedAt) {
@@ -99,6 +141,16 @@ const WorkoutDetailScreen = ({ route, navigation }) => {
     setWorkout({ ...updatedWorkout });
     setEditingCell({ exIndex: null, setIndex: null, field: null });
     setEditingValue('');
+    
+    // Se l'allenamento è in corso, aggiorna lo stato salvato
+    if (workoutInProgress) {
+      await Storage.saveActiveWorkout({
+        workoutId: workout.id,
+        workout: updatedWorkout,
+        startTime: workoutStartTime,
+      });
+    }
+    
     // Salva nel calendario se completato, altrimenti aggiorna il template
     if (workout.completedAt) {
       const calendar = await Storage.getCalendar();
@@ -232,6 +284,9 @@ const WorkoutDetailScreen = ({ route, navigation }) => {
     setWorkoutInProgress(false);
     setWorkoutStartTime(null);
     setWorkoutDuration(0);
+    
+    // Cancella l'allenamento attivo dallo storage
+    await Storage.clearActiveWorkout();
 
     Alert.alert(
       'Allenamento Completato!',

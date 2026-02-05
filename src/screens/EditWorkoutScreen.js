@@ -28,6 +28,7 @@ const EditWorkoutScreen = ({ route, navigation }) => {
         weight: s.weight || 0,
         rest: s.rest || 90,
         time: s.time || 0,
+        completed: s.completed || false,
       })),
     }))
   );
@@ -51,7 +52,7 @@ const EditWorkoutScreen = ({ route, navigation }) => {
       ...exercises,
       {
         exerciseId: availableExercises[0].id,
-        sets: [{ reps: 0, weight: 0, rest: 0 }],
+        sets: [{ reps: 0, weight: 0, rest: 0, completed: false }],
       },
     ]);
   };
@@ -72,6 +73,7 @@ const EditWorkoutScreen = ({ route, navigation }) => {
       reps: 0,
       weight: 0,
       rest: 0,
+      completed: false,
     });
     setExercises(updated);
   };
@@ -101,20 +103,15 @@ const EditWorkoutScreen = ({ route, navigation }) => {
 
     const workoutExercises = exercises.map((ex, exIndex) => {
       const exercise = availableExercises.find((e) => e.id === ex.exerciseId);
-      const originalExercise = initialWorkout.exercises[exIndex];
       
       return {
         exerciseId: ex.exerciseId,
         exerciseName: exercise.name,
         exerciseNotes: exercise.notes || '',
-        sets: ex.sets.map((s, setIndex) => {
-          // Preserve the completed status from the original workout if it exists
-          const originalSet = originalExercise?.sets[setIndex];
-          return {
-            ...s,
-            completed: originalSet?.completed || false
-          };
-        }),
+        sets: ex.sets.map((s) => ({
+          ...s,
+          completed: s.completed || false
+        })),
       };
     });
 
